@@ -152,6 +152,91 @@
           <div id="js-content" class="content-ll">
             
   
+    <article id="post-Rocky-8在wsl里的配置" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2026/01/06/Rocky-8%E5%9C%A8wsl%E9%87%8C%E7%9A%84%E9%85%8D%E7%BD%AE/">Rocky-8在wsl里的配置</a>
+    </h1>
+  
+
+        
+        <a href="/2026/01/06/Rocky-8%E5%9C%A8wsl%E9%87%8C%E7%9A%84%E9%85%8D%E7%BD%AE/" class="archive-article-date">
+  	<time datetime="2026-01-06T11:43:51.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-01-06</time>
+</a>
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="一、总体目标"><a href="#一、总体目标" class="headerlink" title="一、总体目标"></a>一、总体目标</h1><blockquote>
+<p>[!NOTE] Iam系统配置-centos8.2在wsl上的配置与实践<br>在 Windows + WSL2 环境中，使用 Scoop + lxrunoffline 安装并配置 Rocky Linux 8（等价 CentOS 8.2），安装到 D 盘，可正常使用 dnf &#x2F; sudo &#x2F; systemd。</p>
+</blockquote>
+<h1 id="二、完整安装流程"><a href="#二、完整安装流程" class="headerlink" title="二、完整安装流程"></a>二、完整安装流程</h1><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 清理旧发行版</span></span><br><span class="line">wsl <span class="literal">--unregister</span> Centos<span class="literal">-8</span>.<span class="number">2</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 安装 Scoop（Windows 侧）</span></span><br><span class="line"><span class="built_in">Set-ExecutionPolicy</span> <span class="literal">-Scope</span> CurrentUser RemoteSigned</span><br><span class="line"><span class="built_in">iwr</span> <span class="literal">-useb</span> get.scoop.sh | <span class="built_in">iex</span></span><br><span class="line">scoop <span class="literal">--version</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 安装 lxrunoffline（关键工具）</span></span><br><span class="line">scoop bucket add extras</span><br><span class="line">scoop install lxrunoffline</span><br><span class="line">lxrunoffline <span class="literal">--help</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 准备 Rocky Linux 8 rootfs（D 盘）</span></span><br><span class="line">mkdir D:\WSL\Rocky8</span><br><span class="line"><span class="built_in">cd</span> D:\WSL\Rocky8</span><br><span class="line"></span><br><span class="line"><span class="comment"># 下载 **Rocky Linux 8 container rootfs**（⚠ PowerShell 不能用 `-L`）</span></span><br><span class="line"><span class="built_in">iwr</span> https://dl.rockylinux.org/pub/rocky/<span class="number">8</span>/images/x86_64/Rocky<span class="literal">-8-Container-Base</span>.latest.x86_64.tar.xz <span class="literal">-OutFile</span> rocky8.tar.xz</span><br><span class="line"></span><br><span class="line"><span class="comment"># 用 lxrunoffline 安装到 WSL</span></span><br><span class="line">lxrunoffline install `</span><br><span class="line">  <span class="literal">-n</span> Rocky<span class="literal">-8</span> `</span><br><span class="line">  <span class="literal">-d</span> D:\WSL\Rocky8 `</span><br><span class="line">  <span class="operator">-f</span> D:\WSL\Rocky8\rocky8.tar.xz `</span><br><span class="line">  <span class="literal">-s</span></span><br><span class="line">  </span><br><span class="line">wsl <span class="literal">-d</span> Rocky<span class="literal">-8</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h1 id="三、问题解决"><a href="#三、问题解决" class="headerlink" title="三、问题解决"></a>三、问题解决</h1><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">问题 1：RPM 数据库版本不匹配（必踩）</span></span><br><span class="line">RPM: DB_VERSION_MISMATCH</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">解决（标准修复流程）</span></span><br><span class="line">mkdir -p /var/lib/rpm.bak</span><br><span class="line">mv /var/lib/rpm/* /var/lib/rpm.bak/</span><br><span class="line"></span><br><span class="line">rpm --rebuilddb</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">提示手动替换</span></span><br><span class="line">ls -d /var/lib/rpmrebuilddb.*</span><br><span class="line"></span><br><span class="line">mv /var/lib/rpm /var/lib/rpm.old</span><br><span class="line">mv /var/lib/rpmrebuilddb.* /var/lib/rpm</span><br><span class="line"></span><br><span class="line">chown -R root:root /var/lib/rpm</span><br><span class="line">chmod 755 /var/lib/rpm</span><br><span class="line">rpm -qa | head</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">问题 2：passwd / <span class="built_in">sudo</span> 不存在（container rootfs 特性）</span></span><br><span class="line">dnf clean all</span><br><span class="line">dnf install -y shadow-utils passwd sudo util-linux nano</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">问题 3：dnf `<span class="variable">$releasever</span>` 404（**核心坑**）</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment">## 根因</span></span></span><br><span class="line"></span><br><span class="line">- container rootfs **没有 releasever**</span><br><span class="line">    </span><br><span class="line">- mirrorlist + `$releasever` 在 WSL 下直接失效</span><br><span class="line">    </span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash"><span class="comment">## 解决方案（最稳）</span></span></span><br><span class="line"></span><br><span class="line">**禁用原 repo，手写 baseurl**</span><br><span class="line">mv /etc/yum.repos.d /etc/yum.repos.d.bak</span><br><span class="line">mkdir /etc/yum.repos.d</span><br><span class="line">nano /etc/yum.repos.d/rocky.repo</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">写入：</span></span><br><span class="line">[baseos]</span><br><span class="line">name=Rocky Linux 8 - BaseOS</span><br><span class="line">baseurl=https://dl.rockylinux.org/pub/rocky/8/BaseOS/x86_64/os/</span><br><span class="line">enabled=1</span><br><span class="line">gpgcheck=0</span><br><span class="line"></span><br><span class="line">[appstream]</span><br><span class="line">name=Rocky Linux 8 - AppStream</span><br><span class="line">baseurl=https://dl.rockylinux.org/pub/rocky/8/AppStream/x86_64/os/</span><br><span class="line">enabled=1</span><br><span class="line">gpgcheck=0</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">然后：</span></span><br><span class="line">dnf clean all</span><br><span class="line">rm -rf /var/cache/dnf</span><br><span class="line">dnf makecache</span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>版本不兼容导致的问题修复方法：<br>1、安装和配置mariadb时mariadb版本不对<br>解决方法：升级MariaDB版本把10.5改为10.11（官方&#x2F;阿里云最新支持的Rocky&#x2F;CentOS 8仓库）</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">nano ./scripts/install/mariadb.sh</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">替换脚本里的 repo 配置</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">baseurl = https://mirrors.aliyun.com/mariadb/yum/10.11/centos8-amd64/</span></span><br><span class="line"></span><br><span class="line">sudo dnf clean all</span><br><span class="line">sudo dnf makecache</span><br><span class="line">sudo ./scripts/install/mariadb.sh iam::mariadb::install</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+      
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
+      
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/环境配置//" class="article-tag-list-link color5">环境配置</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/环境配置/wsl//" class="article-tag-list-link color4">wsl</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2026/01/06/Rocky-8%E5%9C%A8wsl%E9%87%8C%E7%9A%84%E9%85%8D%E7%BD%AE/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
     <article id="post-配置个人博客教程（Hexo）" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
