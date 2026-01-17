@@ -152,6 +152,68 @@
           <div id="js-content" class="content-ll">
             
   
+    <article id="post-大模型引导Diameter模糊测试" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Diameter模糊测试工作流：</p>
+<p>1、生成协议标准（参考3GPP文档）</p>
+<p>2、初始标准报文种子生成（抓包、协商定义标准）</p>
+<p>3、建立连接（身份验证、鉴权）</p>
+<p>4、变异报文（字节、字段、语义）</p>
+<p>5、发送报文（发送策略：频率、重连、保活、拥塞控制、并发）</p>
+<p>6、接收响应（日志、错误处理转移、可疑报文保存）</p>
+<p>*、状态机建立（报文历史记录、通信对等实体响应信息、保存）</p>
+<p>7、重连回到（3）</p>
+<hr>
+<p>引入大模型技术点：</p>
+<p><strong>Python</strong>:  ChatAFL、FuzzALL<br>1）  Rag 技术、<strong>Milvus</strong>(go)、3GPP文档切片，知识库（pandas、ORC）<br>2）（有限）状态机建立<br>3）  大模型引导生成报文、变异报文、多 Agent（async、pandantic、langchain(graph)<br>4）  错误、崩溃捕捉分析，报文入库逻辑（Pytest）</p>
+<p><strong>gRPC</strong>: go&lt;-&gt;python 逻辑业务分离</p>
+<p><strong>Go</strong>:<br>5 )   <strong>高并发网关</strong>、Redis、后端数据库(Gorm、Mysql）和Gin框架<br>6 )   架构编排技术、Docker编排技术、多目标值并发测试(goroutine、channels)</p>
+<hr>
+
+      
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
+      
+
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2026/01/17/%E5%A4%A7%E6%A8%A1%E5%9E%8B%E5%BC%95%E5%AF%BCDiameter%E6%A8%A1%E7%B3%8A%E6%B5%8B%E8%AF%95/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
     <article id="post-Rocky-8在wsl里的配置" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
