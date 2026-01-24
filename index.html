@@ -152,6 +152,308 @@
           <div id="js-content" class="content-ll">
             
   
+    <article id="post-DRA 路由配置指南" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2026/01/23/DRA%20%E8%B7%AF%E7%94%B1%E9%85%8D%E7%BD%AE%E6%8C%87%E5%8D%97/">DRA 路由配置指南</a>
+    </h1>
+  
+
+        
+        <a href="/2026/01/23/DRA%20%E8%B7%AF%E7%94%B1%E9%85%8D%E7%BD%AE%E6%8C%87%E5%8D%97/" class="archive-article-date">
+  	<time datetime="2026-01-23T07:51:11.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-01-23</time>
+</a>
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>为了配合您的 <strong>Diameter 模糊测试工具</strong>（通常是向目标发送随机或变异的数据包），您需要将 <code>dra-guard</code> 编译为一个<strong>易于调试</strong>且<strong>对错误敏感</strong>的版本。</p>
+<p>以下是基于您提供的 <code>Makefile</code> 和 <code>src/Makefile</code> 文件的具体操作步骤：</p>
+<p><em><strong>下载源文件</strong></em><br><strong>git config –global –unset http.proxy</strong><br><strong>git config –global –unset https.proxy</strong><br><strong>git clone <a target="_blank" rel="noopener" href="https://github.com/acassen/dra-guard">https://github.com/acassen/dra-guard</a><br>git submodule update –init –recursive</strong></p>
+<h3 id="第一步：安装必要的依赖库"><a href="#第一步：安装必要的依赖库" class="headerlink" title="第一步：安装必要的依赖库"></a>第一步：安装必要的依赖库</h3><p><code>dra-guard</code> 依赖于 SCTP、PCAP 和 BPF 相关的库。在编译之前，请确保您的系统（通常是 Linux）已安装以下开发包（以 Ubuntu&#x2F;Debian 为例）：</p>
+<p>Bash</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get update</span><br><span class="line">sudo apt-get install build-essential git libelf-dev clang llvm libsctp-dev libpcap-dev linux-headers-$(uname -r)</span><br></pre></td></tr></table></figure>
+
+<h3 id="第二步：修改-Makefile-以启用“错误检测模式”-Sanitizers"><a href="#第二步：修改-Makefile-以启用“错误检测模式”-Sanitizers" class="headerlink" title="第二步：修改 Makefile 以启用“错误检测模式” (Sanitizers)"></a>第二步：修改 Makefile 以启用“错误检测模式” (Sanitizers)</h3><p>为了让您的模糊测试工具能发现内存崩溃（Crash）、越界读写等隐蔽漏洞，建议使用 <strong>AddressSanitizer (ASan)</strong> 和 <strong>UndefinedBehaviorSanitizer (UBSan)</strong> 进行编译。</p>
+<p>请按以下说明修改文件：</p>
+<p><strong>1. 修改顶层 <code>Makefile</code></strong></p>
+<p>打开项目根目录下的 <code>Makefile</code>，找到 <code>LDFLAGS</code> 这一行。</p>
+<p><strong>修改前：</strong></p>
+<p>Makefile</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">LDFLAGS   = -lpthread -lcrypt -ggdb -lm -lz -lresolv -lelf -lsctp -ldl -lpcap</span><br></pre></td></tr></table></figure>
+
+<p><strong>修改后</strong>（在末尾添加 <code>-fsanitize=address,undefined</code>）：</p>
+<p>Makefile</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">LDFLAGS   = -lpthread -lcrypt -ggdb -lm -lz -lresolv -lelf -lsctp -ldl -lpcap -fsanitize=address,undefined</span><br></pre></td></tr></table></figure>
+
+<p><strong>2. 修改 <code>src/Makefile</code></strong></p>
+<p>打开 <code>src/Makefile</code>，找到 <code>CFLAGS</code> 这一行。</p>
+<p><strong>修改前：</strong></p>
+<p>Makefile</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CFLAGS	 = -g -O2 -ggdb $(INCLUDES) -Werror -Wall -Wunused -Wstrict-prototypes -D_GNU_SOURCE</span><br></pre></td></tr></table></figure>
+
+<p><strong>修改后</strong>（将 <code>-O2</code> 改为 <code>-O0</code> 以获得更精确的报错，并添加 Sanitizers）：</p>
+<p>Makefile</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CFLAGS	 = -g -O0 -ggdb $(INCLUDES) -Werror -Wall -Wunused -Wstrict-prototypes -D_GNU_SOURCE -fno-omit-frame-pointer -fsanitize=address,undefined</span><br></pre></td></tr></table></figure>
+
+<h3 id="第三步：编译项目"><a href="#第三步：编译项目" class="headerlink" title="第三步：编译项目"></a>第三步：编译项目</h3><p>在项目根目录下执行以下命令清除旧文件并重新编译：</p>
+<p>Bash</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">make clean</span><br><span class="line">make</span><br></pre></td></tr></table></figure>
+
+<p>如果编译成功，您将在 <code>bin/</code> 目录下看到 <code>dra-guard</code> 可执行文件。</p>
+<h3 id="第四步：运行目标-Target"><a href="#第四步：运行目标-Target" class="headerlink" title="第四步：运行目标 (Target)"></a>第四步：运行目标 (Target)</h3><p>为了配合模糊测试，需要以前台模式运行程序，并把日志输出到控制台，以便观察 Crash 信息。</p>
+<ol>
+<li><p><strong>准备配置文件</strong>：创建一个配置文件（例如 <code>fuzz_test.conf</code>），配置 <code>dra-guard</code> 监听的 IP 和端口（SCTP）。确保这个地址与模糊测试工具的目标地址一致。</p>
+<p> <strong>fuzz_test.conf配置</strong></p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">! dra-guard 配置文件</span><br><span class="line">! </span><br><span class="line">sctp-proxy fuzz_target</span><br><span class="line"> ! 1. 配置监听地址 (你的 Fuzzer 发送目标)</span><br><span class="line"> ! 语法: listen IP:端口</span><br><span class="line"> listen 127.0.0.2:35021</span><br><span class="line"></span><br><span class="line"> ! 2. 配置转发后端地址 (必须配置，否则代理无法启动)</span><br><span class="line"> ! 语法: connect IP:端口</span><br><span class="line"> ! 建议设置为一个本地不冲突的端口，或者运行一个 dummy server</span><br><span class="line"> connect 127.0.0.8:3868</span><br><span class="line"></span><br><span class="line"> ! 3. 配置工作线程数</span><br><span class="line"> ! Fuzzing 时建议设为 1，方便定位 Crash 上下文</span><br><span class="line"> workers 1</span><br><span class="line">!</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>启动命令</strong>：</p>
+<p> Bash</p>
+ <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"># 需要 root 权限因为涉及 BPF 和原始套接字</span><br><span class="line"># -n: 禁止后台运行 (Don&#x27;t fork)</span><br><span class="line"># -l: 日志输出到控制台 (Log to console)</span><br><span class="line"># -D: 显示详细日志</span><br><span class="line"># -f: 指定配置文件</span><br><span class="line">sudo ./bin/dra-guard -n -l -f fuzz_test.conf</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h3 id="第五步：执行模糊测试"><a href="#第五步：执行模糊测试" class="headerlink" title="第五步：执行模糊测试"></a>第五步：执行模糊测试</h3><ol>
+<li><p><strong>保持 <code>dra-guard</code> 运行</strong>：确保上面的终端窗口处于活动状态。</p>
+</li>
+<li><p><strong>启动工具</strong>：在另一个终端窗口中，运行您的 Diameter 模糊测试工具，将目标指向 <code>dra-guard</code> 监听的 IP 和端口。</p>
+</li>
+<li><p><strong>监控结果</strong>：</p>
+<ul>
+<li><p><strong>如果发生漏洞</strong>：由于开启了 ASan，<code>dra-guard</code> 会立即崩溃并打印红色的错误报告（如 <code>ERROR: AddressSanitizer: heap-buffer-overflow...</code>），这直接证明您发现了一个漏洞。</p>
+</li>
+<li><p><strong>如果程序卡死</strong>：ASan 也会帮助定位死锁或资源耗尽的位置。</p>
+</li>
+</ul>
+</li>
+</ol>
+<p>通过修改 <code>Makefile</code> 加入 <code>-fsanitize=address,undefined</code>，将把 <code>dra-guard</code> 变成一个对错误极其敏感的“靶子”，这能最大化您现有模糊测试工具的测试效果。</p>
+<p><strong>启动命令</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># -n: 前台运行 </span></span><br><span class="line"><span class="comment"># -l: 日志输出到控制台 </span></span><br><span class="line"><span class="comment"># -f: 指定配置文件 s</span></span><br><span class="line"><span class="comment"># 查看是否有程序监听 3868 端口</span></span><br><span class="line"><span class="built_in">sudo</span> ./bin/dra-guard -n -l -f fuzz_test.conf</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 或者使用 ss (显示 SCTP 套接字)</span></span><br><span class="line"><span class="built_in">sudo</span> netstat -anp | grep 3868</span><br><span class="line"><span class="built_in">sudo</span> ss --sctp -lnp</span><br></pre></td></tr></table></figure>
+
+
+<p><strong>注意事项：</strong><br>这个问题非常关键。<code>netstat</code> 和 <code>ss</code> 都没有显示端口，说明 <strong><code>dra-guard</code> 虽然运行了，但根本没有创建监听 Socket</strong>。</p>
+<p>结合日志中的 <code>sigaction failed for signalfd</code>（这只是个警告，不是主因）以及代码逻辑分析，问题在于：<code>dra-guard</code> 的开源版本代码中，<strong>标准代理模式（Standard Proxy）似乎缺少了“自动启动”的逻辑</strong>。代码只在配置了 NAT 模式（<code>ingress-assoc-local-ip</code>）时才会触发启动，而您配置的是标准模式，所以程序读完配置就“傻站”在那里，没有去 bind 端口。</p>
+<p>由于您有源代码，我们可以通过<strong>修改一行代码</strong>强制它启动。</p>
+<h3 id="解决方案：修改-src-main-c"><a href="#解决方案：修改-src-main-c" class="headerlink" title="解决方案：修改 src/main.c"></a>解决方案：修改 <code>src/main.c</code></h3><p>我们需要在读取配置之后，手动遍历所有配置好的代理并启动它们。</p>
+<h4 id="1-打开文件"><a href="#1-打开文件" class="headerlink" title="1. 打开文件"></a>1. 打开文件</h4><p>Bash</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nano src/main.c</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-找到-start-dra-函数"><a href="#2-找到-start-dra-函数" class="headerlink" title="2. 找到 start_dra 函数"></a>2. 找到 <code>start_dra</code> 函数</h4><p>向下滚动，找到 <code>static void start_dra(void)</code> 函数（<strong>大约在 80 行左右</strong>）。</p>
+<p>找到 <code>ret = vty_read_config(conf_file, default_conf_file);</code> 这一行。</p>
+<h4 id="3-插入补丁代码"><a href="#3-插入补丁代码" class="headerlink" title="3. 插入补丁代码"></a>3. 插入补丁代码</h4><p>在 <strong><code>vty_read_config</code></strong> 之后，<code>if (ret &lt; 0)</code> 检查之前或之后（建议在检查之后，<code>daemon_init</code> 之前），插入以下代码块：</p>
+<p><strong>修改后的代码样子如下（带 <code>// +</code> 的是新增代码）：</strong></p>
+<p>C</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">ret = vty_read_config(conf_file, default_conf_file);</span><br><span class="line"></span><br><span class="line">if (ret &lt; 0) &#123;</span><br><span class="line">    log_message(LOG_INFO, &quot;Config file read failed&quot;);</span><br><span class="line">    // ... (原有的错误处理)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// ++++++++++++++++++++++++++++++</span><br><span class="line">// + [PATCH] 强制启动所有 SCTP 代理</span><br><span class="line">// ++++++++++++++++++++++++++++++</span><br><span class="line">&#123;</span><br><span class="line">    dra_sctp_proxy_t *p;</span><br><span class="line">    // 遍历所有配置的代理</span><br><span class="line">    list_for_each_entry(p, &amp;daemon_data-&gt;sctp_proxys, next) &#123;</span><br><span class="line">        log_message(LOG_INFO, &quot;Force starting proxy: %s&quot;, p-&gt;name);</span><br><span class="line">        // 初始化协议 (socket/bind/listen)</span><br><span class="line">        dra_sctp_proto_init(p);</span><br><span class="line">        // 启动工作线程</span><br><span class="line">        dra_sctp_worker_start(p);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">// ++++++++++++++++++++++++++++++</span><br><span class="line"></span><br><span class="line">// ... (原有的 daemon_init 等代码)</span><br></pre></td></tr></table></figure>
+
+<h4 id="4-重新编译"><a href="#4-重新编译" class="headerlink" title="4. 重新编译"></a>4. 重新编译</h4><p>保存退出编辑器，然后运行：</p>
+<p>Bash</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">make clean</span><br><span class="line">make</span><br></pre></td></tr></table></figure>
+
+<h4 id="5-再次运行"><a href="#5-再次运行" class="headerlink" title="5. 再次运行"></a>5. 再次运行</h4><p>现在使用修改后的版本运行：</p>
+<p>Bash</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo ./bin/dra-guard -n -l -D -f fuzz_test.conf</span><br></pre></td></tr></table></figure>
+
+<p><em>这次启动时，您应该能在日志中看到我们加的那句 <code>Force starting proxy: mme_spoofer</code>，紧接着应该会有 SCTP 相关的初始化日志。</em></p>
+<h4 id="6-验证端口"><a href="#6-验证端口" class="headerlink" title="6. 验证端口"></a>6. 验证端口</h4><p>不要关闭 <code>dra-guard</code> 窗口，新建一个窗口查看：</p>
+<p>Bash</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo netstat -anp | grep 35021</span><br></pre></td></tr></table></figure>
+
+<p>这次一定会有 <code>LISTEN</code> 了！然后您就可以愉快地运行 Fuzzer 了。</p>
+<p><strong>模糊测试工具-推荐的完整命令：</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">python3 -m diafuzzer_ng.app.cli --local-host attacker.test.com fuzz 127.0.0.1 35021 \</span><br><span class="line">    --protocol sctp \</span><br><span class="line">    --gen-seed CER --count 1 \</span><br><span class="line">    --console-output full --print-hex</span><br><span class="line">    </span><br><span class="line">python3 -m diafuzzer_ng.app.cli fuzz <span class="string">&#x27;127.0.0.2&#x27;</span> <span class="string">&#x27;35021&#x27;</span> <span class="string">&#x27;--protocol&#x27;</span> <span class="string">&#x27;sctp&#x27;</span> <span class="string">&#x27;--run-scn&#x27;</span> <span class="string">&#x27;scenarios/CER_handshake.scn&#x27;</span> <span class="string">&#x27;--gen-seed&#x27;</span> <span class="string">&#x27;ULR&#x27;</span> <span class="string">&#x27;--count&#x27;</span> <span class="string">&#x27;1&#x27;</span>  <span class="string">&#x27;--strict-decode&#x27;</span> <span class="string">&#x27;--loop&#x27;</span> <span class="string">&#x27;--print-hex&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<p>在 <code>src/dra_sctp.c</code> 文件的<strong>开头部分</strong>（在 <code>#include</code> 之后）定义一个新的宏常量，然后在下面的函数中使用它。</p>
+<p>按照以下步骤修改 <code>src/dra_sctp.c</code>：</p>
+<h3 id="第一步：定义常量"><a href="#第一步：定义常量" class="headerlink" title="第一步：定义常量"></a>第一步：定义常量</h3><p>在文件的顶部，找到 <code>#include &quot;dra_guard.h&quot;</code> 这一行，在它下面添加常量定义。</p>
+<p><strong>修改位置：约第 40 行左右</strong></p>
+<p>C</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">/* local includes */</span><br><span class="line">#include &quot;dra_guard.h&quot;</span><br><span class="line"></span><br><span class="line">// ++++++++++++++++++++++++++++++++++++++++++++++++++++++</span><br><span class="line">// + [PATCH] 定义更大的缓冲区大小 (64KB) 以支持 Fuzzing</span><br><span class="line">// ++++++++++++++++++++++++++++++++++++++++++++++++++++++</span><br><span class="line">#define DRA_SCTP_BIG_BUFFER_SIZE 65535</span><br><span class="line"></span><br><span class="line">/* Extern data */</span><br><span class="line">extern data_t *daemon_data;</span><br></pre></td></tr></table></figure>
+
+<h3 id="第二步：替换旧常量"><a href="#第二步：替换旧常量" class="headerlink" title="第二步：替换旧常量"></a>第二步：替换旧常量</h3><p>向下滚动找到 <code>dra_sctp_assoc_alloc</code> 函数，将原来的 <code>SCTP_PKT_BUFFER_SIZE</code> 替换为刚定义的 <code>DRA_SCTP_BIG_BUFFER_SIZE</code>。</p>
+<p><strong>修改位置：约第 125 行左右</strong></p>
+<p>C</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">static dra_sctp_assoc_t *</span><br><span class="line">dra_sctp_assoc_alloc(dra_sctp_worker_t *w)</span><br><span class="line">&#123;</span><br><span class="line">    dra_sctp_assoc_t *new;</span><br><span class="line">    dra_sctp_peer_t *ingress, *egress;</span><br><span class="line"></span><br><span class="line">    PMALLOC(new);</span><br><span class="line">    INIT_LIST_HEAD(&amp;new-&gt;next);</span><br><span class="line">    ingress = &amp;new-&gt;ingress;</span><br><span class="line">    egress = &amp;new-&gt;egress;</span><br><span class="line"></span><br><span class="line">    // 修改这里：使用新定义的大缓冲区常量</span><br><span class="line">    ingress-&gt;pkt = pkt_buffer_alloc(DRA_SCTP_BIG_BUFFER_SIZE); //</span><br><span class="line">    egress-&gt;pkt = pkt_buffer_alloc(DRA_SCTP_BIG_BUFFER_SIZE);  //</span><br><span class="line">    </span><br><span class="line">    new-&gt;worker = w;</span><br><span class="line">    dra_sctp_assoc_add(w-&gt;proxy, new);</span><br><span class="line"></span><br><span class="line">    return new;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="第三步：重新编译生效"><a href="#第三步：重新编译生效" class="headerlink" title="第三步：重新编译生效"></a>第三步：重新编译生效</h3><p>修改保存后，别忘了执行：</p>
+<p>Bash</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">make clean</span><br><span class="line">make</span><br></pre></td></tr></table></figure>
+
+<p>这样修改后，既解决了缓冲区溢出导致的丢包问题，代码看起来也更加整洁，同时也方便以后如果想测试更大的包（比如 1MB），只需要改开头的那个数字即可。</p>
+<hr>
+<p>简单来说：<strong>DRA-Guard 的代码默认把“正常收发包”的日志打印功能给注释掉了（屏蔽了）。</strong></p>
+<p>即使开启了 <code>-D</code> (Debug) 模式，现在的代码也只会打印<strong>错误信息</strong>（比如之前的“缓冲区不足”）或者<strong>状态变化</strong>（比如“连接成功”）。对于正常的“收到一个包”和“发送一个包”，代码中是用 <code>#if 0 ... #endif</code> 包裹起来的，因此编译器直接忽略了它们。</p>
+<h3 id="证据-基于您提供的-src-dra-sctp-c"><a href="#证据-基于您提供的-src-dra-sctp-c" class="headerlink" title="证据 (基于您提供的 src/dra_sctp.c)"></a>证据 (基于您提供的 <code>src/dra_sctp.c</code>)</h3><p>请看 <code>src/dra_sctp.c</code> 的 <strong>第 436 行</strong> 左右（在 <code>dra_sctp_read</code> 函数里）：</p>
+<p>C</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">    if (flags &amp; MSG_EOR) &#123;</span><br><span class="line">#if 0  &lt;--- 罪魁祸首：这里被硬编码关闭了</span><br><span class="line">        printf(&quot;----[ Incoming buffer ]----\n&quot;);</span><br><span class="line">        if (thread-&gt;u.f.flags == SCTP_FL_INGRESS)</span><br><span class="line">            dump_buffer(&quot;recv-ingress &quot;, (char *) a-&gt;ingress.pkt-&gt;head, pkt_buffer_len(a-&gt;ingress.pkt));</span><br><span class="line">        else</span><br><span class="line">            dump_buffer(&quot;recv-egress &quot;, (char *) a-&gt;egress.pkt-&gt;head, pkt_buffer_len(a-&gt;egress.pkt));</span><br><span class="line">#endif</span><br></pre></td></tr></table></figure>
+
+<p>同样的，在 <strong>第 319 行</strong> 左右（<code>dra_sctp_write</code> 函数里），发送日志也被屏蔽了：</p>
+<p>C</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">    if (!pkt_buffer_data_tailroom(pkt)) &#123;</span><br><span class="line">#if 0  &lt;--- 这里也关闭了</span><br><span class="line">        printf(&quot;---[ Buffer sent ]----\n&quot;);</span><br><span class="line">// ...</span><br><span class="line">#endif</span><br></pre></td></tr></table></figure>
+
+<h3 id="如何开启“海量日志”-开启刷屏模式"><a href="#如何开启“海量日志”-开启刷屏模式" class="headerlink" title="如何开启“海量日志” (开启刷屏模式)"></a>如何开启“海量日志” (开启刷屏模式)</h3><p>如果您想看到每一个数据包的 Hex Dump（十六进制详情），证明数据正在流动，您需要手动修改代码把 <code>#if 0</code> 改为 <code>#if 1</code>。</p>
+<h4 id="1-修改-src-dra-sctp-c"><a href="#1-修改-src-dra-sctp-c" class="headerlink" title="1. 修改 src/dra_sctp.c"></a>1. 修改 <code>src/dra_sctp.c</code></h4><p><strong>A. 开启接收日志 (约 485 行):</strong></p>
+<p>C</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">    if (flags &amp; MSG_EOR) &#123;</span><br><span class="line">#if 1  // &lt;--- 改成 1</span><br><span class="line">        printf(&quot;----[ Incoming buffer ]----\n&quot;);</span><br><span class="line">        // ... (中间代码不变)</span><br><span class="line">#endif</span><br></pre></td></tr></table></figure>
+
+<p><strong>B. 开启发送日志 (约 369 行):</strong></p>
+<p>C</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">    if (!pkt_buffer_data_tailroom(pkt)) &#123;</span><br><span class="line">#if 1  // &lt;--- 改成 1</span><br><span class="line">        printf(&quot;---[ Buffer sent ]----\n&quot;);</span><br><span class="line">        // ... (中间代码不变)</span><br><span class="line">#endif</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-重新编译并运行"><a href="#2-重新编译并运行" class="headerlink" title="2. 重新编译并运行"></a>2. 重新编译并运行</h4><p>Bash</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">make clean</span><br><span class="line">make</span><br><span class="line">sudo ./bin/dra-guard -n -l -D -f fuzz_hss.conf</span><br></pre></td></tr></table></figure>
+
+<p><strong>修改后效果：</strong></p>
+<p>一旦您的 Fuzzer 开始发包，您的屏幕就会疯狂滚动打印出每一个收到和发出的 Diameter 数据包的二进制内容。</p>
+<p><strong>特别提示：</strong></p>
+<p>现在的“静默”其实是<strong>好消息</strong>。因为之前的“缓冲区不足”报错消失了，说明数据包已经成功进入了处理流程，只是它在默默地工作而已。如果您不改代码，也可以直接看 Fuzzer 端，如果 Fuzzer 显示“收到回复”，那就证明中间的 DRA 是通的。</p>
+
+      
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
+      
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/环境配置//" class="article-tag-list-link color5">环境配置</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/环境配置/Diameter//" class="article-tag-list-link color5"> Diameter</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2026/01/23/DRA%20%E8%B7%AF%E7%94%B1%E9%85%8D%E7%BD%AE%E6%8C%87%E5%8D%97/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
+    <article id="post-Python 多进程和多线程" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2026/01/22/Python%20%E5%A4%9A%E8%BF%9B%E7%A8%8B%E5%92%8C%E5%A4%9A%E7%BA%BF%E7%A8%8B/">Python 多进程和多线程</a>
+    </h1>
+  
+
+        
+        <a href="/2026/01/22/Python%20%E5%A4%9A%E8%BF%9B%E7%A8%8B%E5%92%8C%E5%A4%9A%E7%BA%BF%E7%A8%8B/" class="archive-article-date">
+  	<time datetime="2026-01-22T14:44:34.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2026-01-22</time>
+</a>
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>[[source&#x2F;_posts&#x2F;附件&#x2F;20a51768cce06ca2b73ced08ceb4b081_MD5.jpg|Open: Pasted image 20260122224538.png]]<br>![[source&#x2F;_posts&#x2F;附件&#x2F;20a51768cce06ca2b73ced08ceb4b081_MD5.jpg]]</p>
+<p>[[source&#x2F;_posts&#x2F;附件&#x2F;903a8557207588a70dbd7608ccca076a_MD5.jpg|Open: Pasted image 20260122224959.png]]<br>![[source&#x2F;_posts&#x2F;附件&#x2F;903a8557207588a70dbd7608ccca076a_MD5.jpg]]</p>
+
+      
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">多进程和多线程</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+      
+	<div class="article-category tagcloud">
+		<i class="icon-book icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="/categories/python//" class="article-tag-list-link color2">python</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2026/01/22/Python%20%E5%A4%9A%E8%BF%9B%E7%A8%8B%E5%92%8C%E5%A4%9A%E7%BA%BF%E7%A8%8B/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
     <article id="post-大模型引导Diameter模糊测试" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -550,6 +852,10 @@ return o(i(t),arguments.length<2?void 0:u(arguments[1]))}})},function(t,n,r){var
             <input type="checkbox" q-on="click:toggleTag(e)" q-attr="checked:showTags">
           </label>
           <ul class="article-tag-list" q-show="showTags">
+             
+              <li class="article-tag-list-item">
+                <a href="javascript:void(0)" class="js-tag color3">多进程和多线程</a>
+              </li>
              
               <li class="article-tag-list-item">
                 <a href="javascript:void(0)" class="js-tag color2">博客配置教程</a>
